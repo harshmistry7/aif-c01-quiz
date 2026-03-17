@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS AIF-C01 Quiz Platform</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
+  <link href="/index.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen">
+    <div class="loader-ring"></div>
+    <div class="loader-text">LOADING QUESTIONS...</div>
+    <div id="loadError" class="loader-error hidden"></div>
+  </div>
+
+  <div id="appRoot" class="hidden">
+
+    <div class="topbar">
+      <div class="topbar-logo">AIF-C01</div>
+      <span style="font-size:12px;color:var(--text3)">AWS AI Practitioner</span>
+      <div class="topbar-sep"></div>
+      <div class="topbar-qcount" id="topbarQCount"></div>
+      <div class="topbar-stat" id="globalStat" style="display:none">
+        Session <b id="globalPct">—</b>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div id="homeScreen" class="screen active">
+      <div class="home-wrap">
+        <div class="home-headline">Master <span>AWS AI Practitioner</span><br>one quiz at a time.</div>
+        <div class="home-sub" id="homeSubtitle">Loading questions...</div>
+
+        <div class="stats-row">
+          <div class="stat-tile">
+            <div class="stat-num" id="sTotalQ">—</div>
+            <div class="stat-lbl">Questions</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-num" id="sAttempted">0</div>
+            <div class="stat-lbl">Attempted</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-num" id="sCorrect">0</div>
+            <div class="stat-lbl">Correct</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-num" id="sAccuracy">—</div>
+            <div class="stat-lbl">Accuracy</div>
+          </div>
+        </div>
+
+        <div class="section-label">Practice Mode</div>
+        <div class="modes">
+          <div class="mode-pill on" data-mode="topic" onclick="pickMode(this)">🎯 Topic Focus</div>
+          <div class="mode-pill" data-mode="mixed" onclick="pickMode(this)">🔀 Mixed Topics</div>
+          <div class="mode-pill" data-mode="full" onclick="pickMode(this)">📋 Full Mock Exam</div>
+          <div class="mode-pill" onclick="showAllQuestions()">📋 Full Mock Exam</div>
+        </div>
+
+        <div id="topicBlock">
+          <div class="section-label">Select Topic(s)</div>
+          <div class="topics-grid" id="topicsGrid"></div>
+        </div>
+
+        <div class="count-row">
+          <div class="count-lbl">Questions:</div>
+          <input type="range" id="qSlider" min="5" max="50" value="20" oninput="setCount(this.value)">
+          <div class="count-val" id="qVal">20</div>
+        </div>
+
+        <button class="btn-start" id="startBtn" onclick="startQuiz()">Start Quiz →</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quizScreen" class="screen">
+      <div class="quiz-wrap">
+        <div class="qz-header">
+          <div class="qz-progress" id="qzProg">Q 1 / 20</div>
+          <div class="qz-tag" id="qzTag">Topic</div>
+          <div class="qz-timer" id="qzTimer"></div>
+          <button class="btn-quit" onclick="quitQuiz()">✕ Quit</button>
+        </div>
+        <div class="pbar">
+          <div class="pbar-fill" id="pbarFill" style="width:0%"></div>
+        </div>
+        <div class="q-badge" id="qBadge">QUESTION 01</div>
+        <div class="q-card" id="qCard"></div>
+        <div class="opts" id="optsDiv"></div>
+        <div class="feedback" id="fbDiv"></div>
+        <button class="btn-next" id="nextBtn" onclick="next()">Next →</button>
+        <div class="clearfix"></div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsScreen" class="screen">
+      <div class="results-wrap">
+        <div class="r-hero">
+          <div class="r-pct" id="rPct">0%</div>
+          <div class="r-subtitle" id="rSub">0 correct out of 0</div>
+          <div class="r-title" id="rTitle">—</div>
+        </div>
+        <div class="r-grid">
+          <div class="r-tile">
+            <div class="r-tile-num" id="rC" style="color:var(--green)">0</div>
+            <div class="r-tile-lbl">Correct</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-tile-num" id="rW" style="color:var(--red)">0</div>
+            <div class="r-tile-lbl">Wrong</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-tile-num" id="rT" style="color:var(--text2)">0</div>
+            <div class="r-tile-lbl">Total</div>
+          </div>
+        </div>
+        <div class="topic-bars" id="topicBars"></div>
+        <div class="r-btns">
+          <button class="btn-sec" onclick="showReview()">📖 Review Answers</button>
+          <button class="btn-pri" onclick="goHome()">← Home</button>
+        </div>
+        <div class="review-panel hidden" id="reviewPanel">
+          <button class="btn-toggle" onclick="toggleReview()">▲ Hide Review</button>
+          <div id="reviewItems"></div>
+        </div>
+      </div>
+    </div>
+    <!-- REVISION SCREEN -->
+    <div id="revisionScreen" class="screen">
+      <div class="results-wrap">
+        <div class="rev-header">
+          <div>
+            <div class="r-title" style="margin-bottom:4px">📖 Revision — All Questions</div>
+            <div id="revSubtitle" style="font-size:13px;color:var(--text3)"></div>
+          </div>
+          <button class="btn-pri" onclick="goHome()">← Home</button>
+        </div>
+        <div id="allQuestions"></div>
+      </div>
+    </div>
+
+  </div><!-- #appRoot -->
+
+  <!-- QUIT MODAL -->
+  <div class="modal-overlay hidden" id="quitModal">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <div class="modal-title">Quit this quiz?</div>
+      <div class="modal-sub">Your current progress won't be saved to your session stats.</div>
+      <div class="modal-btns">
+        <button class="modal-cancel" onclick="closeQuitModal()">Keep Going</button>
+        <button class="modal-confirm" onclick="confirmQuit()">Yes, Quit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOPICS = [
+      "AI / ML Concepts", "Bedrock", "Prompt Engineering", "Amazon Q",
+      "Managed AI Services", "SageMaker", "Responsible AI", "Cloud Basics", "Security"
+    ];
+    const T_ICON = {
+      "AI / ML Concepts": "🧠", "Bedrock": "⚡", "Prompt Engineering": "✍️",
+      "Amazon Q": "🤖", "Managed AI Services": "🛠️", "SageMaker": "🔬",
+      "Responsible AI": "🛡️", "Cloud Basics": "☁️", "Security": "🔒"
+    };
+
+    let ALL = [];
+    let mode = "topic", selTopics = [], qCount = 20;
+    let quiz = [], idx = 0, score = 0, answers = [];
+    let timer = null, timeLeft = 0;
+
+    // ── LOAD questions.json ──
+    async function loadQuestions() {
+      try {
+        const res = await fetch("questions1.json");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        ALL = await res.json();
+        // Validate basic structure
+        if (!Array.isArray(ALL) || ALL.length === 0) throw new Error("questions.json is empty or invalid");
+        onLoaded();
+      } catch (err) {
+        document.getElementById("loadError").classList.remove("hidden");
+        document.getElementById("loadError").innerHTML =
+          `<strong>Could not load questions.json</strong><br>${err.message}<br><br>
+       Make sure <code>questions.json</code> is in the same folder as <code>index.html</code>.`;
+        document.querySelector(".loader-ring").style.display = "none";
+        document.querySelector(".loader-text").style.display = "none";
+      }
+    }
+
+    function onLoaded() {
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("appRoot").classList.remove("hidden");
+      const total = ALL.length;
+      document.getElementById("sTotalQ").textContent = total;
+      document.getElementById("homeSubtitle").textContent =
+        total + " questions from your PDF · 9 exam topics · 3 practice modes";
+      document.getElementById("topbarQCount").textContent = total + " questions";
+      buildTopicGrid();
+      loadStats();
+      // default select first topic
+      const first = document.querySelector(".topic-tile");
+      if (first) { first.classList.add("on"); selTopics = [first.dataset.topic]; }
+      updateStart();
+    }
+
+    function buildTopicGrid() {
+      const g = document.getElementById("topicsGrid");
+      g.innerHTML = TOPICS.map(t => {
+        const cnt = ALL.filter(q => q.topic === t).length;
+        return `<div class="topic-tile" data-topic="${t}" onclick="toggleTopic(this)">
+      <div class="t-check">✓</div>
+      <div class="t-info">
+        <div class="t-name">${T_ICON[t]} ${t}</div>
+        <div class="t-count">${cnt} questions</div>
+      </div>
+    </div>`;
+      }).join("");
+    }
+
+    function loadStats() {
+      const d = JSON.parse(localStorage.getItem("aif_v2") || "{}");
+      const att = d.att || 0, cor = d.cor || 0;
+      document.getElementById("sAttempted").textContent = att;
+      document.getElementById("sCorrect").textContent = cor;
+      if (att > 0) {
+        const pct = Math.round(cor / att * 100) + "%";
+        document.getElementById("sAccuracy").textContent = pct;
+        document.getElementById("globalStat").style.display = "";
+        document.getElementById("globalPct").textContent = pct;
+      }
+    }
+
+    function saveStats(cor, tot) {
+      const d = JSON.parse(localStorage.getItem("aif_v2") || "{}");
+      d.att = (d.att || 0) + tot;
+      d.cor = (d.cor || 0) + cor;
+      localStorage.setItem("aif_v2", JSON.stringify(d));
+    }
+
+    function pickMode(el) {
+      document.querySelectorAll(".mode-pill").forEach(p => p.classList.remove("on"));
+      el.classList.add("on");
+      mode = el.dataset.mode;
+      const tb = document.getElementById("topicBlock");
+      const sl = document.getElementById("qSlider");
+      if (mode === "full") {
+        tb.style.display = "none";
+        selTopics = [...TOPICS];
+        const max = Math.min(ALL.length, 65);
+        sl.max = max; sl.value = max; setCount(max);
+      } else {
+        tb.style.display = "";
+        sl.max = 50;
+        if (parseInt(sl.value) > 50) { sl.value = 50; setCount(50); }
+        if (mode === "mixed") {
+          document.querySelectorAll(".topic-tile").forEach((t, i) => t.classList.toggle("on", i < 3));
+          selTopics = TOPICS.slice(0, 3);
+        }
+      }
+      updateStart();
+    }
+
+    function toggleTopic(el) {
+      if (mode === "topic") {
+        document.querySelectorAll(".topic-tile").forEach(t => t.classList.remove("on"));
+        el.classList.add("on");
+        selTopics = [el.dataset.topic];
+      } else {
+        el.classList.toggle("on");
+        selTopics = Array.from(document.querySelectorAll(".topic-tile.on")).map(t => t.dataset.topic);
+        if (!selTopics.length) { el.classList.add("on"); selTopics = [el.dataset.topic]; }
+        if (mode === "mixed" && selTopics.length > 3) {
+          el.classList.remove("on");
+          selTopics = Array.from(document.querySelectorAll(".topic-tile.on")).map(t => t.dataset.topic);
+        }
+      }
+      updateStart();
+    }
+
+    function setCount(v) { document.getElementById("qVal").textContent = v; qCount = parseInt(v); }
+    function updateStart() { document.getElementById("startBtn").disabled = selTopics.length === 0; }
+
+    function shuffle(a) {
+      const r = [...a];
+      for (let i = r.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [r[i], r[j]] = [r[j], r[i]];
+      }
+      return r;
+    }
+
+    function startQuiz() {
+      let pool = ALL.filter(q => selTopics.includes(q.topic));
+      pool = shuffle(pool).slice(0, qCount);
+      if (!pool.length) { alert("No questions for selected topics!"); return; }
+      quiz = pool; idx = 0; score = 0; answers = [];
+      show("quizScreen");
+      if (mode === "full") {
+        timeLeft = quiz.length * 90;
+        document.getElementById("qzTimer").style.display = "";
+        startTimer();
+      } else {
+        document.getElementById("qzTimer").style.display = "none";
+      }
+      renderQ();
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      renderTimer();
+      timer = setInterval(() => {
+        timeLeft--;
+        renderTimer();
+        if (timeLeft <= 0) { clearInterval(timer); finishQuiz(); }
+      }, 1000);
+    }
+
+    function renderTimer() {
+      const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+      const el = document.getElementById("qzTimer");
+      el.textContent = `⏱ ${m}:${String(s).padStart(2, "0")}`;
+      el.className = "qz-timer" + (timeLeft < 60 ? " warn" : "");
+    }
+
+    function renderQ() {
+      const q = quiz[idx];
+      const tot = quiz.length;
+      document.getElementById("qzProg").textContent = `Q ${idx + 1} / ${tot}`;
+      document.getElementById("qzTag").textContent = q.topic;
+      document.getElementById("qBadge").textContent = `QUESTION ${String(idx + 1).padStart(2, "0")}`;
+      document.getElementById("qCard").textContent = q.question;
+      document.getElementById("pbarFill").style.width = (idx / tot * 100) + "%";
+      document.getElementById("fbDiv").className = "feedback";
+      document.getElementById("fbDiv").innerHTML = "";
+      document.getElementById("nextBtn").className = "btn-next";
+      const opts = document.getElementById("optsDiv");
+      opts.innerHTML = Object.entries(q.options).map(([k, v]) =>
+        `<div class="opt" data-k="${k}" onclick="pick(this,'${k}')">
+       <div class="opt-key">${k}</div><div>${v}</div>
+     </div>`
+      ).join("");
+    }
+
+    function pick(el, key) {
+      if (el.classList.contains("locked")) return;
+      const q = quiz[idx];
+      const correct = key === q.answer;
+      if (correct) score++;
+      document.querySelectorAll(".opt").forEach(o => o.classList.add("locked"));
+      document.querySelectorAll(".opt").forEach(o => {
+        if (o.dataset.k === q.answer) o.classList.add("correct");
+      });
+      if (!correct) el.classList.add("wrong");
+      const fb = document.getElementById("fbDiv");
+      if (correct) {
+        fb.className = "feedback ok show";
+        fb.innerHTML = "<strong>✓ Correct!</strong>";
+      } else {
+        fb.className = "feedback bad show";
+        fb.innerHTML = `<strong>✗ Incorrect.</strong> Correct answer: <strong>${q.answer}) ${q.options[q.answer]}</strong>`;
+      }
+      answers.push({ q, selected: key, correct });
+      const nb = document.getElementById("nextBtn");
+      nb.className = "btn-next show";
+      nb.textContent = idx < quiz.length - 1 ? "Next →" : "Finish →";
+    }
+
+    function next() {
+      idx++;
+      if (idx >= quiz.length) finishQuiz();
+      else renderQ();
+    }
+
+    function quitQuiz() { document.getElementById("quitModal").classList.remove("hidden"); }
+    function closeQuitModal() { document.getElementById("quitModal").classList.add("hidden"); }
+    function confirmQuit() {
+      document.getElementById("quitModal").classList.add("hidden");
+      clearInterval(timer);
+      goHome();
+    }
+
+    function finishQuiz() {
+      clearInterval(timer);
+      const tot = answers.length;
+      const cor = answers.filter(a => a.correct).length;
+      saveStats(cor, tot);
+      renderResults(cor, tot);
+    }
+
+    function renderResults(cor, tot) {
+      show("resultsScreen");
+      const pct = tot > 0 ? Math.round(cor / tot * 100) : 0;
+      const pctEl = document.getElementById("rPct");
+      pctEl.textContent = pct + "%";
+      pctEl.style.color = pct >= 70 ? "var(--green)" : pct >= 50 ? "var(--orange)" : "var(--red)";
+      document.getElementById("rSub").textContent = `${cor} correct out of ${tot}`;
+      let title = "";
+      if (pct >= 80) title = "🏆 Outstanding! You're exam-ready.";
+      else if (pct >= 70) title = "✅ Great work! Almost there.";
+      else if (pct >= 50) title = "📚 Good effort — review weak areas.";
+      else title = "💪 Keep going! Study the review below.";
+      document.getElementById("rTitle").textContent = title;
+      document.getElementById("rC").textContent = cor;
+      document.getElementById("rW").textContent = tot - cor;
+      document.getElementById("rT").textContent = tot;
+      const ts = {};
+      answers.forEach(a => {
+        const t = a.q.topic;
+        if (!ts[t]) ts[t] = { c: 0, t: 0 };
+        ts[t].t++; if (a.correct) ts[t].c++;
+      });
+      document.getElementById("topicBars").innerHTML =
+        `<div class="section-label" style="margin-bottom:12px">By Topic</div>` +
+        Object.entries(ts).map(([t, s]) => {
+          const p = Math.round(s.c / s.t * 100);
+          const col = p >= 70 ? "var(--green)" : p >= 50 ? "var(--orange)" : "var(--red)";
+          return `<div class="tbar-row">
+        <div class="tbar-name">${T_ICON[t] || ""} ${t} (${s.c}/${s.t})</div>
+        <div class="tbar-bg"><div class="tbar-fill" style="width:${p}%;background:${col}"></div></div>
+        <div class="tbar-pct" style="color:${col}">${p}%</div>
+      </div>`;
+        }).join("");
+      document.getElementById("reviewPanel").classList.add("hidden");
+    }
+
+    function showReview() {
+      const panel = document.getElementById("reviewPanel");
+      panel.classList.remove("hidden");
+      document.getElementById("reviewItems").innerHTML = answers.map((a, i) => `
+    <div class="review-item ${a.correct ? "ok" : "bad"}">
+      <div class="ri-q"><strong>Q${i + 1}.</strong> ${a.q.question}</div>
+      <div class="ri-a">
+        ${!a.correct ? `<div class="ri-wrong">✗ Your answer: ${a.selected}) ${a.q.options[a.selected] || ""}</div>` : ""}
+        <div class="ri-right">✓ Correct: ${a.q.answer}) ${a.q.options[a.q.answer]}</div>
+      </div>
+    </div>`
+      ).join("");
+      panel.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function toggleReview() {
+      const items = document.getElementById("reviewItems");
+      const btn = document.querySelector(".btn-toggle");
+      items.classList.toggle("hidden");
+      btn.textContent = items.classList.contains("hidden") ? "▼ Show Review" : "▲ Hide Review";
+    }
+
+    function goHome() { clearInterval(timer); show("homeScreen"); loadStats(); }
+
+    function show(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function showAllQuestions() {
+      show("revisionScreen");
+      document.getElementById("revSubtitle").textContent = ALL.length + " questions · correct answers highlighted";
+      const div = document.getElementById("allQuestions");
+      div.innerHTML = ALL.map((q, i) => {
+        const opts = Object.entries(q.options).map(([k, v]) => {
+          const isCorrect = k === q.answer;
+          return `<div class="rev-opt ${isCorrect ? 'rev-correct' : ''}">
+        <div class="opt-key" style="${isCorrect ? 'color:var(--green)' : ''}">${k}</div>
+        <div>${v}</div>
+      </div>`;
+        }).join("");
+
+        return `<div class="rev-card">
+      <div class="rev-meta">
+        <span class="rev-num">Q${i + 1}</span>
+        <span class="rev-topic">${T_ICON[q.topic] || ''} ${q.topic}</span>
+      </div>
+      <div class="rev-question">${q.question}</div>
+      <div class="rev-opts">${opts}</div>
+    </div>`;
+      }).join("");
+    }
+
+    // Start by loading the external JSON
+    loadQuestions();
+  </script>
+</body>
+
+</html>
