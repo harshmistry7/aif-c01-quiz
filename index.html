@@ -8,7 +8,67 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet">
-  <link href="index.css" rel="stylesheet">
+  <link href="/index.css" rel="stylesheet">
+  <style>
+    /* Question Count Toggle */
+    .count-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .count-toggle {
+      display: flex;
+      background: var(--bg2, #1a1a2e);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+      border: 1px solid var(--border, rgba(255,255,255,0.1));
+    }
+    .count-toggle-btn {
+      padding: 6px 16px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--text2, #aaa);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .count-toggle-btn.on {
+      background: var(--accent, #7c5cfc);
+      color: #fff;
+    }
+    .count-toggle-btn:hover:not(.on) {
+      color: var(--text1, #fff);
+    }
+    .count-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 180px;
+    }
+    .count-slider-wrap.hidden {
+      display: none;
+    }
+    .count-all-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--green, #22c55e);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .count-all-badge.hidden {
+      display: none;
+    }
+  </style>
 </head>
 
 <body>
@@ -62,7 +122,7 @@
           <div class="mode-pill on" data-mode="topic" onclick="pickMode(this)">🎯 Topic Focus</div>
           <div class="mode-pill" data-mode="mixed" onclick="pickMode(this)">🔀 Mixed Topics</div>
           <div class="mode-pill" data-mode="full" onclick="pickMode(this)">📋 Full Mock Exam</div>
-          <div class="mode-pill" onclick="showAllQuestions()">📖 Revision</div>
+          <div class="mode-pill" onclick="showAllQuestions()">📖Revision</div>
         </div>
 
         <div id="topicBlock">
@@ -70,10 +130,27 @@
           <div class="topics-grid" id="topicsGrid"></div>
         </div>
 
+        <!-- UPDATED: Question count row with toggle -->
         <div class="count-row">
           <div class="count-lbl">Questions:</div>
-          <input type="range" id="qSlider" min="5" max="50" value="20" oninput="setCount(this.value)">
-          <div class="count-val" id="qVal">20</div>
+
+          <!-- Toggle between All / Custom -->
+          <div class="count-toggle">
+            <button class="count-toggle-btn" id="btnAll" onclick="setCountMode('all')">All</button>
+            <button class="count-toggle-btn on" id="btnCustom" onclick="setCountMode('custom')">Custom</button>
+          </div>
+
+          <!-- Slider (shown when Custom) -->
+          <div class="count-slider-wrap" id="sliderWrap">
+            <input type="range" id="qSlider" min="5" max="50" value="20" oninput="setCount(this.value)">
+            <div class="count-val" id="qVal">20</div>
+          </div>
+
+          <!-- All badge (shown when All) -->
+          <div class="count-all-badge hidden" id="allBadge">
+            <span>✦</span>
+            <span id="allBadgeCount">— questions</span>
+          </div>
         </div>
 
         <button class="btn-start" id="startBtn" onclick="startQuiz()">Start Quiz →</button>
@@ -176,16 +253,31 @@
 
     let ALL = [];
     let mode = "topic", selTopics = [], qCount = 20;
+    let countMode = "custom"; // "all" or "custom"
     let quiz = [], idx = 0, score = 0, answers = [];
     let timer = null, timeLeft = 0;
+
+    // ── Count mode toggle ──
+    function setCountMode(m) {
+      countMode = m;
+      document.getElementById("btnAll").classList.toggle("on", m === "all");
+      document.getElementById("btnCustom").classList.toggle("on", m === "custom");
+      document.getElementById("sliderWrap").classList.toggle("hidden", m === "all");
+      document.getElementById("allBadge").classList.toggle("hidden", m === "custom");
+      updateAllBadge();
+    }
+
+    function updateAllBadge() {
+      const pool = ALL.filter(q => selTopics.includes(q.topic));
+      document.getElementById("allBadgeCount").textContent = pool.length + " questions";
+    }
 
     // ── LOAD questions.json ──
     async function loadQuestions() {
       try {
-        const res = await fetch("questions1.json");
+        const res = await fetch("questions2.json");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         ALL = await res.json();
-        // Validate basic structure
         if (!Array.isArray(ALL) || ALL.length === 0) throw new Error("questions.json is empty or invalid");
         onLoaded();
       } catch (err) {
@@ -208,10 +300,10 @@
       document.getElementById("topbarQCount").textContent = total + " questions";
       buildTopicGrid();
       loadStats();
-      // default select first topic
       const first = document.querySelector(".topic-tile");
       if (first) { first.classList.add("on"); selTopics = [first.dataset.topic]; }
       updateStart();
+      updateAllBadge();
     }
 
     function buildTopicGrid() {
@@ -259,7 +351,13 @@
         selTopics = [...TOPICS];
         const max = Math.min(ALL.length, 65);
         sl.max = max; sl.value = max; setCount(max);
+        // Force custom mode for full exam
+        setCountMode("custom");
+        document.getElementById("btnAll").disabled = true;
+        document.getElementById("btnCustom").disabled = true;
       } else {
+        document.getElementById("btnAll").disabled = false;
+        document.getElementById("btnCustom").disabled = false;
         tb.style.display = "";
         sl.max = 50;
         if (parseInt(sl.value) > 50) { sl.value = 50; setCount(50); }
@@ -269,6 +367,7 @@
         }
       }
       updateStart();
+      updateAllBadge();
     }
 
     function toggleTopic(el) {
@@ -286,6 +385,7 @@
         }
       }
       updateStart();
+      updateAllBadge();
     }
 
     function setCount(v) { document.getElementById("qVal").textContent = v; qCount = parseInt(v); }
@@ -302,7 +402,11 @@
 
     function startQuiz() {
       let pool = ALL.filter(q => selTopics.includes(q.topic));
-      pool = shuffle(pool).slice(0, qCount);
+      pool = shuffle(pool);
+      // Use all questions if "All" mode selected, otherwise slice to qCount
+      if (countMode !== "all") {
+        pool = pool.slice(0, qCount);
+      }
       if (!pool.length) { alert("No questions for selected topics!"); return; }
       quiz = pool; idx = 0; score = 0; answers = [];
       show("quizScreen");
@@ -487,7 +591,6 @@
       }).join("");
     }
 
-    // Start by loading the external JSON
     loadQuestions();
   </script>
 </body>
