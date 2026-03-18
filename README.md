@@ -7,7 +7,7 @@ A free, self-hosted quiz platform for the **AWS Certified AI Practitioner (AIF-C
 
 ## 🚀 Live Site
 
-👉 `[https://YOUR-USERNAME.github.io/aif-c01-quiz/](https://harshmistry7.github.io/aif-c01-quiz/)`
+👉 `https://harshmistry7.github.io/aif-c01-quiz/`
 
 ---
 
