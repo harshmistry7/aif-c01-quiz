@@ -3629,7 +3629,7 @@
             "D": "Allow public access to the Amazon Q index.",
             "E": "Configure AWS Identity and Access Management (IAM) for authentication."
         },
-        "answer": "A",
+        "answer": ["A", "E"],
         "topic": "Amazon Q"
     },
     {
