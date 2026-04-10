@@ -10,7 +10,6 @@
     rel="stylesheet">
   <link href="index.css" rel="stylesheet">
   <style>
-    /* Question Count Toggle */
     .count-row {
       display: flex;
       align-items: center;
@@ -90,6 +89,18 @@
       <div class="topbar-stat" id="globalStat" style="display:none">
         Session <b id="globalPct">—</b>
       </div>
+
+      <!-- ✅ Exam Prep Q2 link -->
+      
+        href="exam_prep_q2.html"
+        style="margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);
+               text-decoration:none;padding:6px 14px;border-radius:8px;
+               border:1px solid var(--accent);transition:all 0.2s;"
+        onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
+        onmouseout="this.style.background='transparent';this.style.color='var(--accent)'"
+      >
+        Exam Prep Q2 →
+      </a>
     </div>
 
     <!-- HOME -->
@@ -122,7 +133,7 @@
           <div class="mode-pill on" data-mode="topic" onclick="pickMode(this)">🎯 Topic Focus</div>
           <div class="mode-pill" data-mode="mixed" onclick="pickMode(this)">🔀 Mixed Topics</div>
           <div class="mode-pill" data-mode="full" onclick="pickMode(this)">📋 Full Mock Exam</div>
-          <div class="mode-pill" onclick="showAllQuestions()">📖Revision</div>
+          <div class="mode-pill" onclick="showAllQuestions()">📖 Revision</div>
         </div>
 
         <div id="topicBlock">
@@ -130,23 +141,16 @@
           <div class="topics-grid" id="topicsGrid"></div>
         </div>
 
-        <!-- UPDATED: Question count row with toggle -->
         <div class="count-row">
           <div class="count-lbl">Questions:</div>
-
-          <!-- Toggle between All / Custom -->
           <div class="count-toggle">
             <button class="count-toggle-btn" id="btnAll" onclick="setCountMode('all')">All</button>
             <button class="count-toggle-btn on" id="btnCustom" onclick="setCountMode('custom')">Custom</button>
           </div>
-
-          <!-- Slider (shown when Custom) -->
           <div class="count-slider-wrap" id="sliderWrap">
             <input type="range" id="qSlider" min="5" max="50" value="20" oninput="setCount(this.value)">
             <div class="count-val" id="qVal">20</div>
           </div>
-
-          <!-- All badge (shown when All) -->
           <div class="count-all-badge hidden" id="allBadge">
             <span>✦</span>
             <span id="allBadgeCount">— questions</span>
@@ -211,6 +215,7 @@
         </div>
       </div>
     </div>
+
     <!-- REVISION SCREEN -->
     <div id="revisionScreen" class="screen">
       <div class="results-wrap">
@@ -253,11 +258,10 @@
 
     let ALL = [];
     let mode = "topic", selTopics = [], qCount = 20;
-    let countMode = "custom"; // "all" or "custom"
+    let countMode = "custom";
     let quiz = [], idx = 0, score = 0, answers = [];
     let timer = null, timeLeft = 0;
 
-    // ── Count mode toggle ──
     function setCountMode(m) {
       countMode = m;
       document.getElementById("btnAll").classList.toggle("on", m === "all");
@@ -272,7 +276,6 @@
       document.getElementById("allBadgeCount").textContent = pool.length + " questions";
     }
 
-    // ── LOAD questions.json ──
     async function loadQuestions() {
       try {
         const res = await fetch("questions2.json");
@@ -284,7 +287,7 @@
         document.getElementById("loadError").classList.remove("hidden");
         document.getElementById("loadError").innerHTML =
           `<strong>Could not load questions.json</strong><br>${err.message}<br><br>
-       Make sure <code>questions.json</code> is in the same folder as <code>index.html</code>.`;
+           Make sure <code>questions.json</code> is in the same folder as <code>index.html</code>.`;
         document.querySelector(".loader-ring").style.display = "none";
         document.querySelector(".loader-text").style.display = "none";
       }
@@ -311,12 +314,12 @@
       g.innerHTML = TOPICS.map(t => {
         const cnt = ALL.filter(q => q.topic === t).length;
         return `<div class="topic-tile" data-topic="${t}" onclick="toggleTopic(this)">
-      <div class="t-check">✓</div>
-      <div class="t-info">
-        <div class="t-name">${T_ICON[t]} ${t}</div>
-        <div class="t-count">${cnt} questions</div>
-      </div>
-    </div>`;
+          <div class="t-check">✓</div>
+          <div class="t-info">
+            <div class="t-name">${T_ICON[t]} ${t}</div>
+            <div class="t-count">${cnt} questions</div>
+          </div>
+        </div>`;
       }).join("");
     }
 
@@ -351,7 +354,6 @@
         selTopics = [...TOPICS];
         const max = Math.min(ALL.length, 65);
         sl.max = max; sl.value = max; setCount(max);
-        // Force custom mode for full exam
         setCountMode("custom");
         document.getElementById("btnAll").disabled = true;
         document.getElementById("btnCustom").disabled = true;
@@ -403,10 +405,7 @@
     function startQuiz() {
       let pool = ALL.filter(q => selTopics.includes(q.topic));
       pool = shuffle(pool);
-      // Use all questions if "All" mode selected, otherwise slice to qCount
-      if (countMode !== "all") {
-        pool = pool.slice(0, qCount);
-      }
+      if (countMode !== "all") pool = pool.slice(0, qCount);
       if (!pool.length) { alert("No questions for selected topics!"); return; }
       quiz = pool; idx = 0; score = 0; answers = [];
       show("quizScreen");
@@ -451,8 +450,8 @@
       const opts = document.getElementById("optsDiv");
       opts.innerHTML = Object.entries(q.options).map(([k, v]) =>
         `<div class="opt" data-k="${k}" onclick="pick(this,'${k}')">
-       <div class="opt-key">${k}</div><div>${v}</div>
-     </div>`
+           <div class="opt-key">${k}</div><div>${v}</div>
+         </div>`
       ).join("");
     }
 
@@ -530,10 +529,10 @@
           const p = Math.round(s.c / s.t * 100);
           const col = p >= 70 ? "var(--green)" : p >= 50 ? "var(--orange)" : "var(--red)";
           return `<div class="tbar-row">
-        <div class="tbar-name">${T_ICON[t] || ""} ${t} (${s.c}/${s.t})</div>
-        <div class="tbar-bg"><div class="tbar-fill" style="width:${p}%;background:${col}"></div></div>
-        <div class="tbar-pct" style="color:${col}">${p}%</div>
-      </div>`;
+            <div class="tbar-name">${T_ICON[t] || ""} ${t} (${s.c}/${s.t})</div>
+            <div class="tbar-bg"><div class="tbar-fill" style="width:${p}%;background:${col}"></div></div>
+            <div class="tbar-pct" style="color:${col}">${p}%</div>
+          </div>`;
         }).join("");
       document.getElementById("reviewPanel").classList.add("hidden");
     }
@@ -542,13 +541,13 @@
       const panel = document.getElementById("reviewPanel");
       panel.classList.remove("hidden");
       document.getElementById("reviewItems").innerHTML = answers.map((a, i) => `
-    <div class="review-item ${a.correct ? "ok" : "bad"}">
-      <div class="ri-q"><strong>Q${i + 1}.</strong> ${a.q.question}</div>
-      <div class="ri-a">
-        ${!a.correct ? `<div class="ri-wrong">✗ Your answer: ${a.selected}) ${a.q.options[a.selected] || ""}</div>` : ""}
-        <div class="ri-right">✓ Correct: ${a.q.answer}) ${a.q.options[a.q.answer]}</div>
-      </div>
-    </div>`
+        <div class="review-item ${a.correct ? "ok" : "bad"}">
+          <div class="ri-q"><strong>Q${i + 1}.</strong> ${a.q.question}</div>
+          <div class="ri-a">
+            ${!a.correct ? `<div class="ri-wrong">✗ Your answer: ${a.selected}) ${a.q.options[a.selected] || ""}</div>` : ""}
+            <div class="ri-right">✓ Correct: ${a.q.answer}) ${a.q.options[a.q.answer]}</div>
+          </div>
+        </div>`
       ).join("");
       panel.scrollIntoView({ behavior: "smooth" });
     }
@@ -575,19 +574,18 @@
         const opts = Object.entries(q.options).map(([k, v]) => {
           const isCorrect = k === q.answer;
           return `<div class="rev-opt ${isCorrect ? 'rev-correct' : ''}">
-        <div class="opt-key" style="${isCorrect ? 'color:var(--green)' : ''}">${k}</div>
-        <div>${v}</div>
-      </div>`;
+            <div class="opt-key" style="${isCorrect ? 'color:var(--green)' : ''}">${k}</div>
+            <div>${v}</div>
+          </div>`;
         }).join("");
-
         return `<div class="rev-card">
-      <div class="rev-meta">
-        <span class="rev-num">Q${i + 1}</span>
-        <span class="rev-topic">${T_ICON[q.topic] || ''} ${q.topic}</span>
-      </div>
-      <div class="rev-question">${q.question}</div>
-      <div class="rev-opts">${opts}</div>
-    </div>`;
+          <div class="rev-meta">
+            <span class="rev-num">Q${i + 1}</span>
+            <span class="rev-topic">${T_ICON[q.topic] || ''} ${q.topic}</span>
+          </div>
+          <div class="rev-question">${q.question}</div>
+          <div class="rev-opts">${opts}</div>
+        </div>`;
       }).join("");
     }
 
